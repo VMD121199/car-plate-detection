@@ -1,17 +1,19 @@
 import streamlit as st
 import requests
 
+
 def predict_video(video_file):
     # Modify the FastAPI URL accordingly
-    fastapi_url = "http://your-fastapi-url/predict"
-    
+    fastapi_url = "http://localhost:8000/prediction"
+
     files = {"video": video_file.getvalue()}
     response = requests.post(fastapi_url, files=files)
-    
+
     if response.status_code == 200:
         return response.json()
     else:
         return None
+
 
 def dashboard():
     st.title("Video Prediction Dashboard")
@@ -32,6 +34,7 @@ def dashboard():
                     st.write(results["text_result"])
             else:
                 st.error("Error getting prediction. Please try again.")
+
 
 if __name__ == "__main__":
     dashboard()
