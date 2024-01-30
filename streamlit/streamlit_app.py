@@ -1,4 +1,6 @@
 import io
+import os
+import tempfile
 import streamlit as st
 import requests
 import cv2
@@ -21,46 +23,70 @@ def preprocess_frame(frame, target_size=(300, 300)):
     return cv2.resize(frame, target_size)
 
 
+# def draw_rectangles_on_frame(frame, bounding_box):
+#     x_min, y_min, x_max, y_max = bounding_box
+#     return cv2.rectangle(
+#         frame.copy(), (x_min, y_min), (x_max, y_max), (0, 255, 0), 2
+#     )
+
+
 def draw_rectangles_on_frame(frame, bounding_box):
-    x_min, y_min, x_max, y_max = bounding_box
-    return cv2.rectangle(
-        frame.copy(), (x_min, y_min), (x_max, y_max), (0, 255, 0), 2
-    )
+    if frame is not None:
+        color = (0, 255, 0)  # Green color
+        thickness = 2
+        cv2.rectangle(
+            frame,
+            (int(bounding_box[0]), int(bounding_box[1])),
+            (int(bounding_box[2]), int(bounding_box[3])),
+            color,
+            thickness,
+        )
+    return frame
 
 
-def display_video_with_rectangles(video_bytes):
-    cap = cv2.VideoCapture(io.BytesIO(video_bytes))
+def display_frames_with_rectangles(video_file, video_result):
+    results = video_result.get("results", [])
+    video_bytes = video_file.read()
 
-    width = int(cap.get(3))
-    height = int(cap.get(4))
+    # Create a temporary file to save the processed video
+    fd, temp_file_path = tempfile.mkstemp(suffix=".mp4")
+    with os.fdopen(fd, "wb") as temp_file:
+        temp_file.write(video_bytes)
 
-    out_buffer = io.BytesIO()
-    out = cv2.VideoWriter(
-        out_buffer, cv2.VideoWriter_fourcc(*"mp4v"), 30, (width, height)
-    )
+    # Check the number of frames in the video
+    cap = cv2.VideoCapture(temp_file_path)
+    total_frames = cap.get(cv2.CAP_PROP_FRAME_COUNT)
+    print("Total Frames:", total_frames)
 
+    if not results:
+        st.warning("No results to display.")
+        return
+
+    results = results if isinstance(results, list) else [results]
+
+    idx = 0
     while True:
         ret, frame = cap.read()
         if not ret:
             break
 
-        resized_frame = preprocess_frame(frame)
-
-        fake_bounding_box = (50, 50, 200, 200)
-        frame_with_rectangles = draw_rectangles_on_frame(
-            resized_frame, fake_bounding_box
-        )
-
-        frame_with_rectangles = cv2.resize(
-            frame_with_rectangles, (width, height)
-        )
-
-        out.write(frame_with_rectangles)
+        # Draw rectangles on the frame
+        if (
+            results[idx].get("license_plate", {}).get("bounding_box")
+            and results[idx].get("license_plate", {}).get("bbox_score") >= 0.5
+            and results[idx].get("license_plate", {}).get("text_score") >= 0.5
+        ):
+            frame_with_rectangles = draw_rectangles_on_frame(
+                frame,
+                results[idx].get("license_plate", {}).get("bounding_box"),
+                results[idx].get("license_plate", {}).get("text"),
+            )
+            if frame_with_rectangles is not None:
+                # Display the frame with rectangles using st.image
+                st.image(frame_with_rectangles, channels="BGR")
+        idx += 1
 
     cap.release()
-    out.release()
-
-    st.video(out_buffer.getvalue(), format="video/mp4")
 
 
 def predict_image(image_file):
@@ -75,13 +101,12 @@ def predict_image(image_file):
         return None
 
 
-def draw_rectangles_on_image(image, bounding_box, text):
+def draw_rectangles_on_frame(image, bounding_box, text):
     x_min, y_min, x_max, y_max = np.array(bounding_box, dtype=int)
     detected_image = image.copy()
     cv2.rectangle(
         detected_image, (x_min, y_min), (x_max, y_max), (0, 255, 0), 3
     )
-    print(type(x_max))
     cv2.putText(
         detected_image,
         str(text),
@@ -114,7 +139,7 @@ def dashboard():
             if st.button("Get Prediction"):
                 video_result = predict_video(video_file)
                 if video_result:
-                    display_video_with_rectangles(video_result)
+                    display_frames_with_rectangles(video_file, video_result)
                 else:
                     st.error("Error getting prediction. Please try again.")
 
@@ -130,7 +155,6 @@ def dashboard():
                 if results:
                     st.subheader("Prediction Results:")
                     if "license_plate" in results:
-                        print(results["license_plate"]["bounding_box"])
                         st.subheader("Plate Detection:")
 
                         image_array = np.frombuffer(
@@ -143,7 +167,7 @@ def dashboard():
                             original_image, cv2.COLOR_BGR2RGB
                         )
 
-                        image_with_rectangles = draw_rectangles_on_image(
+                        image_with_rectangles = draw_rectangles_on_frame(
                             original_image_rgb,
                             results["license_plate"]["bounding_box"],
                             results["license_plate"]["text"],
