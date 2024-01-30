@@ -1,8 +1,9 @@
 import string
 import easyocr
+import time
 import csv 
 
-# Initialize the OCR reader
+# Initializing OCR
 reader = easyocr.Reader(['en'], gpu=False)
 
 # Mapping dictionaries for character conversion
@@ -58,12 +59,11 @@ def write_csv(results, output_path):
 
 # for images
 
-
 def write_csv(results, output_path):
     with open(output_path, 'w', newline='') as csvfile:
-        fieldnames = ['image_idx', 'license_plate_bbox', 'bbox_score', 'license_number', 'text_score']
+        fieldnames = ['image_idx', 'license_plate_bbox', 'bbox_score', 'license_number', 'text_score', 'detection_time']
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-        
+
         writer.writeheader()
 
         for image_idx in results.keys():
@@ -82,7 +82,8 @@ def write_csv(results, output_path):
                             license_plate_info['bbox'][3]),
                         'bbox_score': license_plate_info['bbox_score'],
                         'license_number': license_plate_info['text'],
-                        'text_score': license_plate_info['text_score']
+                        'text_score': license_plate_info['text_score'],
+                        'detection_time': time.strftime("%Y-%m-%d %H:%M:%S")
                     })
 '''
 #### Specific to car plates in UK

@@ -26,14 +26,14 @@ for idx, image in enumerate(images):
     for license_plate in license_plates.boxes.data.tolist():
         x1, y1, x2, y2, score, class_id = license_plate
 
-        # Crop license plate
+        # Cropping license plate
         license_plate_crop = frame[int(y1):int(y2), int(x1): int(x2), :]
 
-        # Process license plate
+        # Processing license plate
         license_plate_crop_gray = cv2.cvtColor(license_plate_crop, cv2.COLOR_BGR2GRAY)
         _, license_plate_crop_thresh = cv2.threshold(license_plate_crop_gray, 64, 255, cv2.THRESH_BINARY_INV)
 
-        # Read license plate number
+        # Reading license plate number using a function from util
         license_plate_text, license_plate_text_score = read_license_plate(license_plate_crop_thresh)
 
         if license_plate_text is not None:
@@ -42,5 +42,4 @@ for idx, image in enumerate(images):
                                                         'bbox_score': score,
                                                         'text_score': license_plate_text_score}}
 
-# Write results
-write_csv(results, 'output_data/test.csv')
+write_csv(results, 'output_data/test2.csv')
