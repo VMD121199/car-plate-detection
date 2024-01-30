@@ -1,3 +1,4 @@
+import io
 import streamlit as st
 import requests
 import cv2
@@ -15,6 +16,52 @@ def predict_video(video_file):
         return response.json()
     else:
         return None
+
+
+def preprocess_frame(frame, target_size=(300, 300)):
+    return cv2.resize(frame, target_size)
+
+
+def draw_rectangles_on_frame(frame, bounding_box):
+    x_min, y_min, x_max, y_max = bounding_box
+    return cv2.rectangle(
+        frame.copy(), (x_min, y_min), (x_max, y_max), (0, 255, 0), 2
+    )
+
+
+def display_video_with_rectangles(video_bytes):
+    cap = cv2.VideoCapture(io.BytesIO(video_bytes))
+
+    width = int(cap.get(3))
+    height = int(cap.get(4))
+
+    out_buffer = io.BytesIO()
+    out = cv2.VideoWriter(
+        out_buffer, cv2.VideoWriter_fourcc(*"mp4v"), 30, (width, height)
+    )
+
+    while True:
+        ret, frame = cap.read()
+        if not ret:
+            break
+
+        resized_frame = preprocess_frame(frame)
+
+        fake_bounding_box = (50, 50, 200, 200)
+        frame_with_rectangles = draw_rectangles_on_frame(
+            resized_frame, fake_bounding_box
+        )
+
+        frame_with_rectangles = cv2.resize(
+            frame_with_rectangles, (width, height)
+        )
+
+        out.write(frame_with_rectangles)
+
+    cap.release()
+    out.release()
+
+    st.video(out_buffer.getvalue(), format="video/mp4")
 
 
 def predict_image(image_file):
@@ -37,10 +84,8 @@ def draw_rectangles_on_image(image, bounding_box):
     )
 
 
-def crop_image(image, bounding_box, target_size=(300, 300)):
-    x_min, y_min, x_max, y_max = bounding_box
+def resize_image(image, target_size=(300, 300)):
     resized_image = cv2.resize(image, target_size)
-    cropped_image = resized_image[y_min:y_max, x_min:x_max]
     return resized_image
 
 
@@ -56,25 +101,18 @@ def dashboard():
         if video_file is not None:
             st.video(video_file)
             if st.button("Get Prediction"):
-                results = predict_video(video_file)
-                if results:
-                    st.subheader("Prediction Results:")
-                    if "video_result" in results:
-                        st.subheader("Video Result:")
-                        st.video(results["video_result"])
-                    if "text_result" in results:
-                        st.subheader("Text Result:")
-                        st.write(results["text_result"])
+                video_result = predict_video(video_file)
+                if video_result:
+                    display_video_with_rectangles(video_result)
                 else:
                     st.error("Error getting prediction. Please try again.")
+
     elif prediction_type == "Image":
         image_file = st.file_uploader(
             "Upload Image", type=["jpg", "png", "jpeg"]
         )
         if image_file is not None:
-            st.image(
-                image_file, caption="Uploaded Image", use_column_width=True
-            )
+            st.image(image_file, caption="Uploaded Image", width=300)
 
             if st.button("Get Prediction"):
                 results = predict_image(image_file)
@@ -93,16 +131,15 @@ def dashboard():
                             original_image, cv2.COLOR_BGR2RGB
                         )
 
-                        cropped_image = crop_image(
+                        resized_image = resize_image(
                             original_image_rgb, results["bounding_box"]
                         )
                         image_with_rectangles = draw_rectangles_on_image(
-                            cropped_image, results["bounding_box"]
+                            resized_image, results["bounding_box"]
                         )
                         st.image(
                             image_with_rectangles,
                             caption="Cropped Image with Rectangles",
-                            use_column_width=True,
                             width=300,
                         )
 

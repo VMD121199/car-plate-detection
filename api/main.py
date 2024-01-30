@@ -2,6 +2,7 @@ from fastapi import FastAPI, UploadFile, HTTPException
 import cv2
 import numpy as np
 from keras.models import load_model
+import tempfile
 
 app = FastAPI()
 model = load_model("../model/ssd_base.h5")
@@ -23,12 +24,16 @@ def preprocess_frame(image, target_size=(300, 300)):
 
 @app.post("/prediction")
 async def prediction(file: UploadFile):
-    print(file)
     if file.content_type.startswith("video"):
         video_bytes = await file.read()
-        video_array = np.frombuffer(video_bytes, dtype=np.uint8)
+        # Save the video file to a temporary file
+        temp_file_path = tempfile.NamedTemporaryFile(
+            delete=False, suffix=".mp4"
+        ).name
+        with open(temp_file_path, "wb") as temp_file:
+            temp_file.write(video_bytes)
 
-        cap = cv2.VideoCapture(video_array)
+        cap = cv2.VideoCapture(temp_file_path)
 
         results = []
 
@@ -39,7 +44,7 @@ async def prediction(file: UploadFile):
 
             processed_frame = preprocess_frame(frame)
             frame_results = detect_objects_on_frame(processed_frame)
-            results.append(frame_results)
+            results.append(frame_results.tolist())
 
         cap.release()
 
