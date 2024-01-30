@@ -5,7 +5,7 @@ def create_connection():
     conn = psycopg2.connect(
         dbname="car_plate_detection",
         user="postgres",
-        password="123456",
+        password="121199",
         host="localhost",
         port="5432"
     )
