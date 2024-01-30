@@ -32,9 +32,11 @@ def draw_rectangles_on_frame(frame, bounding_box):
 def display_video_with_rectangles(video_bytes):
     cap = cv2.VideoCapture(io.BytesIO(video_bytes))
 
+    # Get video properties
     width = int(cap.get(3))
     height = int(cap.get(4))
 
+    # Create a VideoWriter object to save the output video
     out_buffer = io.BytesIO()
     out = cv2.VideoWriter(
         out_buffer, cv2.VideoWriter_fourcc(*"mp4v"), 30, (width, height)
@@ -45,22 +47,28 @@ def display_video_with_rectangles(video_bytes):
         if not ret:
             break
 
+        # Resize the frame to 300x300
         resized_frame = preprocess_frame(frame)
 
+        # Draw rectangles on the resized frame (Replace this with your object detection logic)
+        # For now, we are just using a placeholder bounding box for illustration.
         fake_bounding_box = (50, 50, 200, 200)
         frame_with_rectangles = draw_rectangles_on_frame(
             resized_frame, fake_bounding_box
         )
 
+        # Resize the frame back to its original size
         frame_with_rectangles = cv2.resize(
             frame_with_rectangles, (width, height)
         )
 
+        # Write the frame with rectangles to the output video
         out.write(frame_with_rectangles)
 
     cap.release()
     out.release()
 
+    # Display the output video in Streamlit
     st.video(out_buffer.getvalue(), format="video/mp4")
 
 
@@ -84,7 +92,7 @@ def draw_rectangles_on_image(image, bounding_box):
     )
 
 
-def resize_image(image, target_size=(300, 300)):
+def crop_image(image, bounding_box, target_size=(300, 300)):
     resized_image = cv2.resize(image, target_size)
     return resized_image
 
@@ -131,11 +139,11 @@ def dashboard():
                             original_image, cv2.COLOR_BGR2RGB
                         )
 
-                        resized_image = resize_image(
+                        cropped_image = crop_image(
                             original_image_rgb, results["bounding_box"]
                         )
                         image_with_rectangles = draw_rectangles_on_image(
-                            resized_image, results["bounding_box"]
+                            cropped_image, results["bounding_box"]
                         )
                         st.image(
                             image_with_rectangles,
