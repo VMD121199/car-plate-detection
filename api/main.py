@@ -42,9 +42,11 @@ def yolo_detection(frame):
         license_plate_crop_gray = cv2.cvtColor(
             license_plate_crop, cv2.COLOR_BGR2GRAY
         )
+        # Adjusting the threshold value
         _, license_plate_crop_thresh = cv2.threshold(
-            license_plate_crop_gray, 64, 255, cv2.THRESH_BINARY_INV
-        )
+            license_plate_crop_gray, 100, 255, cv2.THRESH_BINARY
+            )
+
 
         # Read license plate number
         license_plate_text, license_plate_text_score = read_license_plate(
