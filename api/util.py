@@ -90,7 +90,7 @@ def write_csv(results, output_path):
                     )
 
 
-"""
+
 #### Specific to car plates in UK
 
 def license_complies_format(text):
@@ -120,21 +120,26 @@ def format_license(text):
             license_plate_ += text[j]
 
     return license_plate_
-"""
+
 
 
 def read_license_plate(license_plate_crop):
-
     detections = reader.readtext(license_plate_crop)
 
+    license_plate_text = ""
+    score = 0
+
     for detection in detections:
-        bbox, text, score = detection
+        bbox, text, detection_score = detection
+        text = text.upper().replace(' ', '')
 
-        text = text.upper().replace(" ", "")
+        # Accumulate characters to form the complete license plate text
+        license_plate_text += text
+        score = max(score, detection_score)
 
-        # if license_complies_format(text):
-        #    return format_license(text), score
-        return text, score
+    if license_complies_format(license_plate_text):
+        formatted_license_plate = format_license(license_plate_text)
+        return formatted_license_plate, score
 
     return None, None
 
