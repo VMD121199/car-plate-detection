@@ -3,13 +3,16 @@ import cv2
 import numpy as np
 from datasets import load_dataset
 
-from util import read_license_plate, write_csv
+from util import read_license_plate, write_csv, load_region_mapping_from_csv
 
 results = {}
 
 # Loading models
 coco_model = YOLO('yolov8n.pt')
 license_plate_detector = YOLO('models/best.pt')
+
+# Loading region mapping
+load_region_mapping_from_csv('regions.csv')
 
 # Loading dataset
 from datasets import load_dataset

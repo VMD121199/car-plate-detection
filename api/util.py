@@ -1,27 +1,35 @@
 import string
 import easyocr
+import csv
 import time
-import csv 
+import datetime
 
-# Initializing OCR
-reader = easyocr.Reader(['en'], gpu=False)
+# Initialize the OCR reader
+reader = easyocr.Reader(["en"], gpu=False)
 
 # Mapping dictionaries for character conversion
-dict_char_to_int = {'O': '0',
-                    'I': '1',
-                    'J': '3',
-                    'A': '4',
-                    'G': '6',
-                    'S': '5'}
+dict_char_to_int = {"O": "0", "I": "1", "J": "3", "A": "4", "G": "6", "S": "5"}
 
-dict_int_to_char = {'0': 'O',
-                    '1': 'I',
-                    '3': 'J',
-                    '4': 'A',
-                    '6': 'G',
-                    '5': 'S'}
+dict_int_to_char = {"0": "O", "1": "I", "3": "J", "4": "A", "6": "G", "5": "S"}
 
-'''
+region_mapping = {}
+
+def load_region_mapping_from_csv(csv_path):
+    with open(csv_path, newline="") as csvfile:
+        reader = csv.reader(csvfile)
+        next(reader)  # Skip header
+        for row in reader:
+            prefixes = [prefix.strip() for prefix in row[0].split(',')]
+            region = row[1].strip()
+            for prefix in prefixes:
+                region_mapping[prefix] = region
+
+
+def get_license_plate_region(license_plate_text):
+    return region_mapping.get(license_plate_text[:2], "Unknown")
+
+
+"""
 
 #for videos
 
@@ -55,23 +63,37 @@ def write_csv(results, output_path):
                             )
         f.close()
 
-'''
+"""
 
 # for images
-import datetime
 
-# for images
+
 def write_csv(results, output_path):
-    with open(output_path, 'a', newline='') as csvfile:
-        fieldnames = ['image_idx', 'license_plate_bbox', 'bbox_score', 'license_number', 'text_score', 'detection_time']
+    with open(output_path, "w", newline="") as csvfile:
+        fieldnames = [
+            "image_idx",
+            "license_plate_bbox",
+            "bbox_score",
+            "license_number",
+            "text_score",
+            "detection_time"
+            "region",
+        ]
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+
+        writer.writeheader()
 
         for image_idx in results.keys():
             for class_id in results[image_idx].keys():
-                if 'license_plate' in results[image_idx][class_id].keys() and \
-                   'text' in results[image_idx][class_id]['license_plate'].keys():
-                    
-                    license_plate_info = results[image_idx][class_id]['license_plate']
+                if (
+                    "license_plate" in results[image_idx][class_id].keys()
+                    and "text"
+                    in results[image_idx][class_id]["license_plate"].keys()
+                ):
+
+                    license_plate_info = results[image_idx][class_id][
+                        "license_plate"
+                    ]
 
                     writer.writerow({
                         'image_idx': datetime.datetime.now().strftime('%Y%m%d%H%M%S%f'),
@@ -83,7 +105,8 @@ def write_csv(results, output_path):
                         'bbox_score': license_plate_info['bbox_score'],
                         'license_number': license_plate_info['text'],
                         'text_score': license_plate_info['text_score'],
-                        'detection_time': time.strftime("%Y-%m-%d %H:%M:%S")
+                        'detection_time': time.strftime("%Y-%m-%d %H:%M:%S"),
+                        'region': license_plate_info['region']
                     })
 
 
@@ -118,6 +141,7 @@ def format_license(text):
     return license_plate_
 
 
+
 def read_license_plate(license_plate_crop):
     detections = reader.readtext(license_plate_crop)
 
@@ -135,8 +159,9 @@ def read_license_plate(license_plate_crop):
     if license_complies_format(license_plate_text):
         formatted_license_plate = format_license(license_plate_text)
         return formatted_license_plate, score
+    else:
+        return license_plate_text, score
 
-    return None, None
 
 def get_car(license_plate, vehicle_track_ids):
     x1, y1, x2, y2, score, class_id = license_plate

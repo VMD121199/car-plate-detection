@@ -6,13 +6,15 @@ from keras.models import load_model
 import tempfile
 from ultralytics import YOLO
 from db import create_connection
-from save_db import create_plate_detection_table, insert_detection
+from save_db import create_plate_detection_table, insert_detection, load_region_mapping_from_csv
 
-from util import read_license_plate
+from util import read_license_plate, get_license_plate_region
 
 app = FastAPI()
-model = load_model("../model/ssd_base.h5")
-yolo_model = YOLO("../model/best.pt")
+model = load_model("models/ssd_base.h5")
+yolo_model = YOLO("models/best.pt")
+load_region_mapping_from_csv("data/Book 7.csv")
+
 
 
 def detect_objects_on_frame(frame):
@@ -60,6 +62,7 @@ def yolo_detection(frame):
                     "text": license_plate_text,
                     "bbox_score": score,
                     "text_score": license_plate_text_score,
+                    "region": get_license_plate_region(license_plate_text),
                 }
             }
     return results
