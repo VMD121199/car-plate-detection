@@ -4,7 +4,6 @@ import streamlit as st
 import requests
 import cv2
 import numpy as np
-from webapp import check_authentication
 
 
 def predict_video(video_file):
@@ -116,12 +115,6 @@ def draw_rectangles_on_frame(image, bounding_box, text):
 def dashboard():
     st.title("Prediction Dashboard")
 
-    is_authenticated = check_authentication()
-
-    if not is_authenticated:
-        st.warning("You need to log in to access this dashboard.")
-        return
-
     prediction_type = st.selectbox(
         "Select Prediction Type", ["Video", "Image"]
     )
@@ -173,6 +166,12 @@ def dashboard():
 
                 else:
                     st.error("Error getting prediction. Please try again.")
+
+    if st.button("Logout"):
+        # Reset session state attributes on logout
+        st.session_state.logged_in = False
+        st.session_state.user_email = None
+        st.experimental_rerun()
 
 
 if __name__ == "__main__":

@@ -5,6 +5,8 @@ import numpy as np
 from keras.models import load_model
 import tempfile
 from ultralytics import YOLO
+from db import create_connection
+from save_db import create_plate_detection_table, insert_detection
 
 from util import read_license_plate
 
@@ -61,6 +63,20 @@ def yolo_detection(frame):
     return results
 
 
+def save_db(detection):
+    conn = create_connection()
+    create_plate_detection_table(conn)
+
+    license_plate_info = detection.get("license_plate", {})
+    bounding_box = license_plate_info.get("bounding_box", [0, 0, 0, 0])
+    text = license_plate_info.get("text", "")
+    bbox_score = license_plate_info.get("bbox_score", 0)
+    text_score = license_plate_info.get("text_score", 0)
+    xmin, ymin, xmax, ymax = bounding_box
+    dt = [xmin, ymin, xmax, ymax, text, bbox_score, text_score]
+    insert_detection(conn, dt)
+
+
 @app.post("/prediction")
 async def prediction(file: UploadFile):
     if file.content_type.startswith("video"):
@@ -87,7 +103,7 @@ async def prediction(file: UploadFile):
             results.append(image_results_yolo[0])
 
         cap.release()
-        print({"results": results})
+
         return {"results": results}
     elif file.content_type.startswith("image"):
         image_bytes = await file.read()
@@ -98,7 +114,9 @@ async def prediction(file: UploadFile):
         # processed_image = preprocess_frame(image)
         # image_results = detect_objects_on_frame(processed_image)
         image_results_yolo = yolo_detection(image)
-        return image_results_yolo[0]
+        image_results_yolo = image_results_yolo[0]
+        save_db(image_results_yolo)
+        return image_results_yolo
     else:
         raise HTTPException(
             status_code=400,
