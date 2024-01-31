@@ -1,27 +1,16 @@
 import string
 import easyocr
-import time
-import csv 
+import csv
 
-# Initializing OCR
-reader = easyocr.Reader(['en'], gpu=False)
+# Initialize the OCR reader
+reader = easyocr.Reader(["en"], gpu=False)
 
 # Mapping dictionaries for character conversion
-dict_char_to_int = {'O': '0',
-                    'I': '1',
-                    'J': '3',
-                    'A': '4',
-                    'G': '6',
-                    'S': '5'}
+dict_char_to_int = {"O": "0", "I": "1", "J": "3", "A": "4", "G": "6", "S": "5"}
 
-dict_int_to_char = {'0': 'O',
-                    '1': 'I',
-                    '3': 'J',
-                    '4': 'A',
-                    '6': 'G',
-                    '5': 'S'}
+dict_int_to_char = {"0": "O", "1": "I", "3": "J", "4": "A", "6": "G", "5": "S"}
 
-'''
+"""
 
 #for videos
 
@@ -55,38 +44,53 @@ def write_csv(results, output_path):
                             )
         f.close()
 
-'''
+"""
 
 # for images
-import datetime
 
-# for images
+
 def write_csv(results, output_path):
-    with open(output_path, 'a', newline='') as csvfile:
-        fieldnames = ['image_idx', 'license_plate_bbox', 'bbox_score', 'license_number', 'text_score', 'detection_time']
+    with open(output_path, "w", newline="") as csvfile:
+        fieldnames = [
+            "image_idx",
+            "license_plate_bbox",
+            "bbox_score",
+            "license_number",
+            "text_score",
+        ]
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+
+        writer.writeheader()
 
         for image_idx in results.keys():
             for class_id in results[image_idx].keys():
-                if 'license_plate' in results[image_idx][class_id].keys() and \
-                   'text' in results[image_idx][class_id]['license_plate'].keys():
-                    
-                    license_plate_info = results[image_idx][class_id]['license_plate']
+                if (
+                    "license_plate" in results[image_idx][class_id].keys()
+                    and "text"
+                    in results[image_idx][class_id]["license_plate"].keys()
+                ):
 
-                    writer.writerow({
-                        'image_idx': datetime.datetime.now().strftime('%Y%m%d%H%M%S%f'),
-                        'license_plate_bbox': '[{} {} {} {}]'.format(
-                            license_plate_info['bbox'][0],
-                            license_plate_info['bbox'][1],
-                            license_plate_info['bbox'][2],
-                            license_plate_info['bbox'][3]),
-                        'bbox_score': license_plate_info['bbox_score'],
-                        'license_number': license_plate_info['text'],
-                        'text_score': license_plate_info['text_score'],
-                        'detection_time': time.strftime("%Y-%m-%d %H:%M:%S")
-                    })
+                    license_plate_info = results[image_idx][class_id][
+                        "license_plate"
+                    ]
+
+                    writer.writerow(
+                        {
+                            "image_idx": image_idx,
+                            "license_plate_bbox": "[{} {} {} {}]".format(
+                                license_plate_info["bbox"][0],
+                                license_plate_info["bbox"][1],
+                                license_plate_info["bbox"][2],
+                                license_plate_info["bbox"][3],
+                            ),
+                            "bbox_score": license_plate_info["bbox_score"],
+                            "license_number": license_plate_info["text"],
+                            "text_score": license_plate_info["text_score"],
+                        }
+                    )
 
 
+"""
 #### Specific to car plates in UK
 
 def license_complies_format(text):
@@ -116,27 +120,24 @@ def format_license(text):
             license_plate_ += text[j]
 
     return license_plate_
+"""
 
 
 def read_license_plate(license_plate_crop):
+
     detections = reader.readtext(license_plate_crop)
 
-    license_plate_text = ""
-    score = 0
-
     for detection in detections:
-        bbox, text, detection_score = detection
-        text = text.upper().replace(' ', '')
+        bbox, text, score = detection
 
-        # Accumulate characters to form the complete license plate text
-        license_plate_text += text
-        score = max(score, detection_score)
+        text = text.upper().replace(" ", "")
 
-    if license_complies_format(license_plate_text):
-        formatted_license_plate = format_license(license_plate_text)
-        return formatted_license_plate, score
+        # if license_complies_format(text):
+        #    return format_license(text), score
+        return text, score
 
     return None, None
+
 
 def get_car(license_plate, vehicle_track_ids):
     x1, y1, x2, y2, score, class_id = license_plate
