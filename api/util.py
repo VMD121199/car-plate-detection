@@ -1,6 +1,8 @@
 import string
 import easyocr
 import csv
+import time
+import datetime
 
 # Initialize the OCR reader
 reader = easyocr.Reader(["en"], gpu=False)
@@ -9,6 +11,23 @@ reader = easyocr.Reader(["en"], gpu=False)
 dict_char_to_int = {"O": "0", "I": "1", "J": "3", "A": "4", "G": "6", "S": "5"}
 
 dict_int_to_char = {"0": "O", "1": "I", "3": "J", "4": "A", "6": "G", "5": "S"}
+
+region_mapping = {}
+
+def load_region_mapping_from_csv(csv_path):
+    with open(csv_path, newline="") as csvfile:
+        reader = csv.reader(csvfile)
+        next(reader)  # Skip header
+        for row in reader:
+            prefixes = [prefix.strip() for prefix in row[0].split(',')]
+            region = row[1].strip()
+            for prefix in prefixes:
+                region_mapping[prefix] = region
+
+
+def get_license_plate_region(license_plate_text):
+    return region_mapping.get(license_plate_text[:2], "Unknown")
+
 
 """
 
@@ -57,6 +76,8 @@ def write_csv(results, output_path):
             "bbox_score",
             "license_number",
             "text_score",
+            "detection_time"
+            "region",
         ]
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
 
@@ -74,21 +95,19 @@ def write_csv(results, output_path):
                         "license_plate"
                     ]
 
-                    writer.writerow(
-                        {
-                            "image_idx": image_idx,
-                            "license_plate_bbox": "[{} {} {} {}]".format(
-                                license_plate_info["bbox"][0],
-                                license_plate_info["bbox"][1],
-                                license_plate_info["bbox"][2],
-                                license_plate_info["bbox"][3],
-                            ),
-                            "bbox_score": license_plate_info["bbox_score"],
-                            "license_number": license_plate_info["text"],
-                            "text_score": license_plate_info["text_score"],
-                        }
-                    )
-
+                    writer.writerow({
+                        'image_idx': datetime.datetime.now().strftime('%Y%m%d%H%M%S%f'),
+                        'license_plate_bbox': '[{} {} {} {}]'.format(
+                            license_plate_info['bbox'][0],
+                            license_plate_info['bbox'][1],
+                            license_plate_info['bbox'][2],
+                            license_plate_info['bbox'][3]),
+                        'bbox_score': license_plate_info['bbox_score'],
+                        'license_number': license_plate_info['text'],
+                        'text_score': license_plate_info['text_score'],
+                        'detection_time': time.strftime("%Y-%m-%d %H:%M:%S"),
+                        'region': license_plate_info['region']
+                    })
 
 
 #### Specific to car plates in UK
@@ -122,7 +141,6 @@ def format_license(text):
     return license_plate_
 
 
-
 def read_license_plate(license_plate_crop):
     detections = reader.readtext(license_plate_crop)
 
@@ -140,8 +158,8 @@ def read_license_plate(license_plate_crop):
     if license_complies_format(license_plate_text):
         formatted_license_plate = format_license(license_plate_text)
         return formatted_license_plate, score
-
-    return None, None
+    else:
+        return license_plate_text, score
 
 
 def get_car(license_plate, vehicle_track_ids):
