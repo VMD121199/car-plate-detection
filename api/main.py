@@ -9,12 +9,12 @@ from ultralytics import YOLO
 from util import read_license_plate
 
 app = FastAPI()
-model = load_model("../model/ssd_base.h5")
+# model = load_model("../model/ssd_base.h5")
 yolo_model = YOLO("../model/best.pt")
 
 
 def detect_objects_on_frame(frame):
-    prediction = model.predict(frame)
+    prediction = yolo_model.predict(frame)
     prediction = prediction[0] * 300
     prediction = np.array(prediction, dtype=np.uint8)
     return prediction

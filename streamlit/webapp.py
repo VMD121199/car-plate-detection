@@ -2,6 +2,7 @@ import streamlit as st
 import hashlib
 from auth import create_users_table, insert_user, get_user_by_email
 from db import create_connection
+# from streamlit_app import dashboard
 
 
 def get_session_id():
@@ -11,12 +12,10 @@ def get_session_id():
     """
     return hashlib.md5(script_code.encode()).hexdigest()
 
-
 class SessionState:
     def __init__(self, **kwargs):
         for key, val in kwargs.items():
             setattr(self, key, val)
-
 
 def user_authentication():
     # Retrieve or create SessionState
@@ -30,9 +29,28 @@ def user_authentication():
     table_name = "users"
     create_users_table(conn)
 
-    st.title("User Authentication App")
+    st.title("Car License Plate Recognition App")
 
-    if not session_state.is_authenticated:
+    if session_state.is_authenticated:
+        # dashboard()
+        st.subheader("Sign In")
+        email = st.text_input("Email")
+        password = st.text_input("Password", type="password")
+
+        if st.button("Sign In"):
+            user = get_user_by_email(conn, table_name, email)
+            if user is not None:
+                stored_password = user[2]
+                if password == stored_password:
+                    st.success(f"Logged in as {email}")
+                    session_state.is_authenticated = True
+                    session_state.user_email = email
+                    st.rerun()
+                else:
+                    st.error("Incorrect password!")
+            else:
+                st.error("User does not exist!")
+    else:
         page = st.sidebar.radio("Navigation", ["Sign Up", "Sign In"])
 
         if page == "Sign Up":
@@ -49,10 +67,13 @@ def user_authentication():
                     if existing_user:
                         st.error("User already exists with that email!")
                     else:
-                        insert_user(conn, email, password)
+                        insert_user(conn, table_name, email, password)
                         st.success(
                             "User created successfully! Please sign in."
                         )
+                        session_state.is_authenticated = True
+                        session_state.user_email = email
+                        st.rerun()
                 else:
                     st.error("Passwords do not match!")
 
@@ -68,30 +89,27 @@ def user_authentication():
                     if password == stored_password:
                         st.success(f"Logged in as {email}")
                         session_state.is_authenticated = True
+                        session_state.user_email = email
+                        st.rerun()
                     else:
                         st.error("Incorrect password!")
                 else:
                     st.error("User does not exist!")
+    
+    
+    # if session_state.is_authenticated == "Sign Up":
+    #     st.session_state.current_page = "Sign Up"
+    #     if st.button("Sign Up"):
+    #         session_state.is_authenticated = "Sign In"
+    #         st.rerun()
 
-
-def check_authentication():
-    # Check if the user is authenticated
-    conn = create_connection()
-    table_name = "users"
-    create_users_table(conn)
-
-    # Retrieve the user's email from session state (you may need to modify this based on your authentication implementation)
-    user_email = st.session_state.get("user_email")
-
-    if not user_email:
-        return False
-
-    user = get_user_by_email(conn, table_name, user_email)
-
-    if user is not None:
-        return True
-    else:
-        return False
+    
+    # elif session_state.show_page == "Sign In":
+    #     st.session_state.current_page = "Sign In"
+    #     st.write("This is the sign-in page.")
+    #     if st.button("Sign In"):
+    #         session_state.show_page = "Sign Up"
+    #         st.experimental_rerun()
 
 
 if __name__ == "__main__":

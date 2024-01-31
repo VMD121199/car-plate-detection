@@ -114,7 +114,8 @@ def draw_rectangles_on_frame(image, bounding_box, text):
 
 
 def dashboard():
-    st.title("Prediction Dashboard")
+    st.title("Car License Plate Recognition App")
+    st.subheader("Prediction Dashboard")
 
     is_authenticated = check_authentication()
 
