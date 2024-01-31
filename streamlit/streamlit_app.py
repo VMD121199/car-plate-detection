@@ -63,15 +63,15 @@ def display_frames_with_rectangles(video_file, video_result):
             frames.append(frame)
         idx += 1
     cap.release()
-    out = cv2.VideoWriter(
-        "output.mp4",
-        cv2.VideoWriter_fourcc(*"mp4v"),
-        int(fps / 2),
-        (width, height),
-    )
-    for fr in frames:
-        out.write(fr)
-    out.release()
+    # out = cv2.VideoWriter(
+    #     "output.mp4",
+    #     cv2.VideoWriter_fourcc(*"mp4v"),
+    #     int(fps / 2),
+    #     (width, height),
+    # )
+    # for fr in frames:
+    #     out.write(fr)
+    # out.release()
 
 
 def predict_image(image_file):

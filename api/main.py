@@ -10,6 +10,7 @@ from save_db import (
     create_plate_detection_table,
     insert_detection,
 )
+
 # we use sort extension to track vehicle
 # install sort by: git clone https://github.com/abewley/sort.git
 from sort.sort import *
@@ -105,8 +106,9 @@ def save_db(detection):
     text = license_plate_info.get("text", "")
     bbox_score = license_plate_info.get("bbox_score", 0)
     text_score = license_plate_info.get("text_score", 0)
+    region = license_plate_info.get("region", "")
     xmin, ymin, xmax, ymax = bounding_box
-    dt = [xmin, ymin, xmax, ymax, text, bbox_score, text_score]
+    dt = [xmin, ymin, xmax, ymax, text, bbox_score, text_score, region]
     insert_detection(conn, dt)
 
 
@@ -133,12 +135,9 @@ async def prediction(file: UploadFile):
             # frame_results = detect_objects_on_frame(processed_frame)
             image_results_yolo = yolo_detection(frame)
             results.append(image_results_yolo)
-            # if (
-            #     image_results_yolo[0]
-            #     .get("license_plate", {})
-            #     .get("bounding_box")
-            # ):
-            #     save_db(image_results_yolo[0])
+            print(image_results_yolo)
+            for detected in image_results_yolo:
+                save_db(detected)
 
         cap.release()
         print(results)
