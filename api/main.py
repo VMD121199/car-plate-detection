@@ -33,7 +33,7 @@ def preprocess_frame(image, target_size=(300, 300)):
 
 def yolo_detection(frame):
     yolo_predicted = yolo_model(frame)[0]
-    results = defaultdict(dict)
+    results = []
     for license_plate in yolo_predicted.boxes.data.tolist():
         x1, y1, x2, y2, score, class_id = license_plate
 
@@ -98,17 +98,22 @@ async def prediction(file: UploadFile):
 
         while True:
             ret, frame = cap.read()
-            print(ret)
             if not ret:
                 break
 
             # processed_frame = preprocess_frame(frame)
             # frame_results = detect_objects_on_frame(processed_frame)
             image_results_yolo = yolo_detection(frame)
-            results.append(image_results_yolo[0])
+            results.append(image_results_yolo)
+            # if (
+            #     image_results_yolo[0]
+            #     .get("license_plate", {})
+            #     .get("bounding_box")
+            # ):
+            #     save_db(image_results_yolo[0])
 
         cap.release()
-
+        print(results)
         return {"results": results}
     elif file.content_type.startswith("image"):
         image_bytes = await file.read()
@@ -119,8 +124,8 @@ async def prediction(file: UploadFile):
         # processed_image = preprocess_frame(image)
         # image_results = detect_objects_on_frame(processed_image)
         image_results_yolo = yolo_detection(image)
-        image_results_yolo = image_results_yolo[0]
-        save_db(image_results_yolo)
+        for detected in image_results_yolo:
+            save_db(detected)
         return image_results_yolo
     else:
         raise HTTPException(

@@ -141,7 +141,6 @@ def format_license(text):
     return license_plate_
 
 
-
 def read_license_plate(license_plate_crop):
     detections = reader.readtext(license_plate_crop)
 

@@ -1,5 +1,6 @@
 import os
 import tempfile
+import time
 import streamlit as st
 import requests
 import cv2
@@ -18,24 +19,6 @@ def predict_video(video_file):
         return None
 
 
-def preprocess_frame(frame, target_size=(300, 300)):
-    return cv2.resize(frame, target_size)
-
-
-def draw_rectangles_on_frame(frame, bounding_box):
-    if frame is not None:
-        color = (0, 255, 0)  # Green color
-        thickness = 2
-        cv2.rectangle(
-            frame,
-            (int(bounding_box[0]), int(bounding_box[1])),
-            (int(bounding_box[2]), int(bounding_box[3])),
-            color,
-            thickness,
-        )
-    return frame
-
-
 def display_frames_with_rectangles(video_file, video_result):
     results = video_result.get("results", [])
     video_bytes = video_file.read()
@@ -48,37 +31,47 @@ def display_frames_with_rectangles(video_file, video_result):
     # Check the number of frames in the video
     cap = cv2.VideoCapture(temp_file_path)
     total_frames = cap.get(cv2.CAP_PROP_FRAME_COUNT)
+    fps = cap.get(cv2.CAP_PROP_FPS)
     print("Total Frames:", total_frames)
-
+    width = int(cap.get(3))
+    height = int(cap.get(4))
     if not results:
         st.warning("No results to display.")
         return
 
     results = results if isinstance(results, list) else [results]
-
+    frames = []
     idx = 0
     while True:
         ret, frame = cap.read()
         if not ret:
             break
-
         # Draw rectangles on the frame
-        if (
-            results[idx].get("license_plate", {}).get("bounding_box")
-            and results[idx].get("license_plate", {}).get("bbox_score") >= 0.5
-            and results[idx].get("license_plate", {}).get("text_score") >= 0.5
-        ):
-            frame_with_rectangles = draw_rectangles_on_frame(
-                frame,
-                results[idx].get("license_plate", {}).get("bounding_box"),
-                results[idx].get("license_plate", {}).get("text"),
-            )
+        if len(results[idx]) > 0:
+            frame_with_rectangles = frame.copy()
+            for rs in results[idx]:
+                frame_with_rectangles = draw_rectangles_on_frame(
+                    frame_with_rectangles,
+                    rs.get("license_plate", {}).get("bounding_box"),
+                    rs.get("license_plate", {}).get("text"),
+                )
             if frame_with_rectangles is not None:
                 # Display the frame with rectangles using st.image
                 st.image(frame_with_rectangles, channels="BGR")
+                frames.append(frame_with_rectangles)
+        else:
+            frames.append(frame)
         idx += 1
-
     cap.release()
+    out = cv2.VideoWriter(
+        "output.mp4",
+        cv2.VideoWriter_fourcc(*"mp4v"),
+        int(fps / 2),
+        (width, height),
+    )
+    for fr in frames:
+        out.write(fr)
+    out.release()
 
 
 def predict_image(image_file):
@@ -141,28 +134,29 @@ def dashboard():
                 results = predict_image(image_file)
                 if results:
                     st.subheader("Prediction Results:")
-                    if "license_plate" in results:
-                        st.subheader("Plate Detection:")
+                    st.subheader("Plate Detection:")
 
-                        image_array = np.frombuffer(
-                            image_file.getvalue(), dtype=np.uint8
-                        )
-                        original_image = cv2.imdecode(
-                            image_array, cv2.IMREAD_COLOR
-                        )
-                        original_image_rgb = cv2.cvtColor(
-                            original_image, cv2.COLOR_BGR2RGB
-                        )
+                    image_array = np.frombuffer(
+                        image_file.getvalue(), dtype=np.uint8
+                    )
+                    original_image = cv2.imdecode(
+                        image_array, cv2.IMREAD_COLOR
+                    )
+                    original_image_rgb = cv2.cvtColor(
+                        original_image, cv2.COLOR_BGR2RGB
+                    )
 
-                        image_with_rectangles = draw_rectangles_on_frame(
-                            original_image_rgb,
-                            results["license_plate"]["bounding_box"],
-                            results["license_plate"]["text"],
-                        )
-                        st.image(
-                            image_with_rectangles,
-                            caption="Cropped Image with Rectangles",
-                        )
+                    for rs in results:
+                        if "license_plate" in rs:
+                            original_image_rgb = draw_rectangles_on_frame(
+                                original_image_rgb,
+                                rs["license_plate"]["bounding_box"],
+                                rs["license_plate"]["text"],
+                            )
+                    st.image(
+                        original_image_rgb,
+                        caption="Cropped Image with Rectangles",
+                    )
 
                 else:
                     st.error("Error getting prediction. Please try again.")
