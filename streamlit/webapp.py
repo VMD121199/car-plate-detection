@@ -2,9 +2,9 @@ import streamlit as st
 from auth import create_users_table, insert_user, get_user_by_email
 from db import create_connection
 
+
 def user_authentication():
     conn = create_connection()
-    table_name = "users"
     create_users_table(conn)
 
     st.title("User Authentication App")
@@ -19,7 +19,8 @@ def user_authentication():
 
         if st.button("Sign Up"):
             if password == confirm_password:
-                existing_user = get_user_by_email(conn, table_name, email)
+                print(email, password, confirm_password)
+                existing_user = get_user_by_email(conn, email)
                 if existing_user:
                     st.error("User already exists with that email!")
                 else:
@@ -34,10 +35,18 @@ def user_authentication():
         password = st.text_input("Password", type="password")
 
         if st.button("Sign In"):
-            user = get_user_by_email(conn, table_name, email)
-            if user is not None:  # Check if user is not None
+            user = get_user_by_email(conn, email)
+            if user is not None:
                 stored_password = user[2]
-                if password == stored_password:  # Assuming "password" is the key for the password in the user object
+                if password == stored_password:
+                    # Set session state to indicate the user is logged in
+                    st.session_state.logged_in = True
+                    st.session_state.user_email = email
+
+                    # Redirect to the dashboard by updating the URL
+                    st.experimental_set_query_params(logged_in=True)
+                    st.experimental_rerun()
+
                     st.success(f"Logged in as {email}")
                 else:
                     st.error("Incorrect password!")
@@ -45,5 +54,5 @@ def user_authentication():
                 st.error("User does not exist!")
 
 
-if __name__ == "__main__":
-    user_authentication()
+# if __name__ == "__main__":
+#     user_authentication()

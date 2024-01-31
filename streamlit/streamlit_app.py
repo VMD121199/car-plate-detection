@@ -1,4 +1,3 @@
-import io
 import os
 import tempfile
 import streamlit as st
@@ -21,13 +20,6 @@ def predict_video(video_file):
 
 def preprocess_frame(frame, target_size=(300, 300)):
     return cv2.resize(frame, target_size)
-
-
-# def draw_rectangles_on_frame(frame, bounding_box):
-#     x_min, y_min, x_max, y_max = bounding_box
-#     return cv2.rectangle(
-#         frame.copy(), (x_min, y_min), (x_max, y_max), (0, 255, 0), 2
-#     )
 
 
 def draw_rectangles_on_frame(frame, bounding_box):
@@ -120,11 +112,6 @@ def draw_rectangles_on_frame(image, bounding_box, text):
     return detected_image
 
 
-def crop_image(image, target_size=(300, 300)):
-    resized_image = cv2.resize(image, target_size)
-    return resized_image
-
-
 def dashboard():
     st.title("Prediction Dashboard")
 
@@ -179,6 +166,12 @@ def dashboard():
 
                 else:
                     st.error("Error getting prediction. Please try again.")
+
+    if st.button("Logout"):
+        # Reset session state attributes on logout
+        st.session_state.logged_in = False
+        st.session_state.user_email = None
+        st.experimental_rerun()
 
 
 if __name__ == "__main__":
