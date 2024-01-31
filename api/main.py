@@ -10,6 +10,8 @@ from save_db import (
     create_plate_detection_table,
     insert_detection,
 )
+# we use sort extension to track vehicle
+# install sort by: git clone https://github.com/abewley/sort.git
 from sort.sort import *
 
 from util import (
