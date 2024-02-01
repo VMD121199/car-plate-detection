@@ -10,7 +10,9 @@ def create_plate_detection_table(conn, table_name="plate_detection"):
         license_text TEXT NOT NULL,
         bbox_score DOUBLE PRECISION NOT NULL,
         text_score DOUBLE PRECISION NOT NULL,
-        user_detect TEXT
+        region TEXT,
+        user_detect TEXT,
+        detection_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
 """
     cursor.execute(create_table_query)
@@ -20,14 +22,16 @@ def create_plate_detection_table(conn, table_name="plate_detection"):
 
 def insert_detection(conn, detection):
     cursor = conn.cursor()
-    xmin, ymin, xmax, ymax, license_text, bbox_score, text_score = detection
+    xmin, ymin, xmax, ymax, license_text, bbox_score, text_score, region = (
+        detection
+    )
     insert_query = f"""
-    INSERT INTO plate_detection (x_min, y_min, x_max, y_max, license_text, bbox_score, text_score)
-    VALUES (%s, %s, %s, %s, %s, %s, %s)
+    INSERT INTO plate_detection (x_min, y_min, x_max, y_max, license_text, bbox_score, text_score, region)
+    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
 """
     cursor.execute(
         insert_query,
-        (xmin, ymin, xmax, ymax, license_text, bbox_score, text_score),
+        (xmin, ymin, xmax, ymax, license_text, bbox_score, text_score, region),
     )
     conn.commit()
     cursor.close()
