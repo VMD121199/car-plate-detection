@@ -57,21 +57,23 @@ def display_frames_with_rectangles(video_file, video_result):
                 )
             if frame_with_rectangles is not None:
                 # Display the frame with rectangles using st.image
-                st.image(frame_with_rectangles, channels="BGR")
+                # st.image(frame_with_rectangles, channels="BGR")
                 frames.append(frame_with_rectangles)
         else:
             frames.append(frame)
         idx += 1
     cap.release()
-    # out = cv2.VideoWriter(
-    #     "output.mp4",
-    #     cv2.VideoWriter_fourcc(*"mp4v"),
-    #     int(fps / 2),
-    #     (width, height),
-    # )
-    # for fr in frames:
-    #     out.write(fr)
-    # out.release()
+    out = cv2.VideoWriter(
+        "output.mp4",
+        cv2.VideoWriter_fourcc(*"mp4v"),
+        int(fps / 2),
+        (width, height),
+    )
+    for fr in frames:
+        out.write(fr)
+    out.release()
+    st.text(f"Video saved in output.mp4")
+    st.video("output.mp4")
 
 
 def predict_image(image_file):

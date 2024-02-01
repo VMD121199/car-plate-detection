@@ -1,11 +1,14 @@
+import json
+import requests
 import streamlit as st
-from auth import create_users_table, insert_user, get_user_by_email
-from db import create_connection
+
+# from api.auth import create_users_table, insert_user, get_user_by_email
+# from db import create_connection
 
 
 def user_authentication():
-    conn = create_connection()
-    create_users_table(conn)
+    # conn = create_connection()
+    # create_users_table(conn)
 
     st.title("User Authentication App")
 
@@ -20,12 +23,13 @@ def user_authentication():
         if st.button("Sign Up"):
             if password == confirm_password:
                 print(email, password, confirm_password)
-                existing_user = get_user_by_email(conn, email)
-                if existing_user:
-                    st.error("User already exists with that email!")
+                signup_url = "http://localhost:8000/signup/"
+                data = {"email": email, "password": password}
+                response = requests.post(signup_url, json=data)
+                if response.json().get("signup"):
+                    st.success(response.json().get("msg"))
                 else:
-                    insert_user(conn, email, password)
-                    st.success("User created successfully! Please sign in.")
+                    st.error(response.json().get("msg"))
             else:
                 st.error("Passwords do not match!")
 
@@ -35,23 +39,18 @@ def user_authentication():
         password = st.text_input("Password", type="password")
 
         if st.button("Sign In"):
-            user = get_user_by_email(conn, email)
-            if user is not None:
-                stored_password = user[2]
-                if password == stored_password:
-                    # Set session state to indicate the user is logged in
-                    st.session_state.logged_in = True
-                    st.session_state.user_email = email
-
-                    # Redirect to the dashboard by updating the URL
-                    st.experimental_set_query_params(logged_in=True)
-                    st.experimental_rerun()
-
-                    st.success(f"Logged in as {email}")
-                else:
-                    st.error("Incorrect password!")
+            login_url = "http://localhost:8000/login/"
+            data = {"email": email, "password": password}
+            response = requests.post(login_url, json=data)
+            print(response.json())
+            if response.json().get("login"):
+                st.session_state.logged_in = True
+                st.session_state.user_email = email
+                st.experimental_set_query_params(logged_in=True)
+                st.experimental_rerun()
+                st.success(response.json().get("msg"))
             else:
-                st.error("User does not exist!")
+                st.error(response.json().get("msg"))
 
 
 # if __name__ == "__main__":
