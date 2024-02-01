@@ -10,7 +10,7 @@ def user_authentication():
     # conn = create_connection()
     # create_users_table(conn)
 
-    st.title("User Authentication App")
+    st.title("Car plate Detection APP")
 
     page = st.sidebar.radio("Navigation", ["Sign Up", "Sign In"])
 
