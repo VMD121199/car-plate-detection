@@ -11,7 +11,8 @@ def create_plate_detection_table(conn, table_name="plate_detection"):
         bbox_score DOUBLE PRECISION NOT NULL,
         text_score DOUBLE PRECISION NOT NULL,
         region TEXT,
-        user_detect TEXT
+        user_detect TEXT,
+        detection_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
 """
     cursor.execute(create_table_query)
