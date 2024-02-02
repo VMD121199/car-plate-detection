@@ -27,7 +27,7 @@ import os
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 
 app = FastAPI()
-model = load_model("../model/ssd_base.h5")
+# model = load_model("../model/ssd_base.h5")
 yolo_model = YOLO("../model/best.pt")
 coco_model = YOLO("../model/yolov8n.pt")
 load_region_mapping_from_csv("../data/Book 7.csv")
@@ -40,7 +40,7 @@ create_users_table(conn)
 
 
 def detect_objects_on_frame(frame):
-    prediction = model.predict(frame)
+    prediction = yolo_model.predict(frame)
     prediction = prediction[0] * 300
     prediction = np.array(prediction, dtype=np.uint8)
     return prediction
