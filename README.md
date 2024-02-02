@@ -8,10 +8,10 @@ The repository contains all the necessary code, models, and documentation to dep
  
 Follow these steps to install and run the app:
  
-1. **Clone the Repository**: `git clone <repository-url>`
-2. **Navigate to Project Directory**: `cd <project-directory>`
+1. **Clone the Repository**: `git clone https://github.com/VMD121199/car-plate-detection.git`
+2. **Navigate to Project Directory**: `cd car-plate-detection`
 3. **Install Dependencies**: `pip install -r requirements.txt`
-4. **Start FastAPI Server**: `uvicorn main:app --reload`
-5. **Launch Streamlit App**: `streamlit run app.py`
+4. **Start FastAPI Server**: `cd api` then `uvicorn main:app --reload`
+5. **Launch Streamlit App**: `cd streamlit` then `streamlit run main.py`
  
 Ensure Python is installed and consider using a virtual environment for dependency management.
