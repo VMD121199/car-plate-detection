@@ -23,12 +23,10 @@ def display_frames_with_rectangles(video_file, video_result):
     results = video_result.get("results", [])
     video_bytes = video_file.read()
 
-    # Create a temporary file to save the processed video
     fd, temp_file_path = tempfile.mkstemp(suffix=".mp4")
     with os.fdopen(fd, "wb") as temp_file:
         temp_file.write(video_bytes)
 
-    # Check the number of frames in the video
     cap = cv2.VideoCapture(temp_file_path)
     total_frames = cap.get(cv2.CAP_PROP_FRAME_COUNT)
     fps = cap.get(cv2.CAP_PROP_FPS)
@@ -52,7 +50,7 @@ def display_frames_with_rectangles(video_file, video_result):
             for rs in results[idx]:
                 frame_with_rectangles = draw_rectangles_on_frame(
                     frame_with_rectangles,
-                    rs.get("license_plate", {}).get("bounding_box"),
+                    rs.get("license_plate", {}).get("tracking_box"),
                     rs.get("license_plate", {}).get("text"),
                 )
             if frame_with_rectangles is not None:
@@ -152,7 +150,7 @@ def dashboard():
                         if "license_plate" in rs:
                             original_image_rgb = draw_rectangles_on_frame(
                                 original_image_rgb,
-                                rs["license_plate"]["bounding_box"],
+                                rs["license_plate"]["tracking_box"],
                                 rs["license_plate"]["text"],
                             )
                     st.image(

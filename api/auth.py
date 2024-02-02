@@ -1,8 +1,4 @@
 # auth.py
-from passlib.hash import pbkdf2_sha256
-from db import create_connection
-
-
 def create_users_table(conn, table_name="users"):
     cursor = conn.cursor()
     create_table_query = f"""
