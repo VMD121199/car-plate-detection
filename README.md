@@ -14,4 +14,4 @@ Follow these steps to install and run the app:
 4. **Start FastAPI Server**: `cd api` then `uvicorn main:app --reload`
 5. **Launch Streamlit App**: `cd streamlit` then `streamlit run main.py`
  
-Ensure Python is installed and consider using a virtual environment for dependency management.
+Ensure Python>=3.9.0 is installed and consider using a virtual environment for dependency management.
