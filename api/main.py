@@ -6,10 +6,13 @@ from keras.models import load_model
 import tempfile
 from ultralytics import YOLO
 from db import create_connection
-from auth import create_users_table, get_user_by_email, insert_user
-from save_db import (
-    create_plate_detection_table,
+from db_query import (
+    create_users_table,
+    get_user_by_email,
+    insert_user,
     insert_detection,
+    create_plate_detection_table,
+    get_data,
 )
 
 # we use sort extension to track vehicle
@@ -94,6 +97,7 @@ def yolo_detection(frame):
                     },
                 }
             )
+
     return results
 
 
@@ -149,6 +153,7 @@ async def prediction(file: UploadFile):
         # processed_image = preprocess_frame(image)
         # image_results = detect_objects_on_frame(processed_image)
         image_results_yolo = yolo_detection(image)
+        print(image_results_yolo)
         for detected in image_results_yolo:
             save_db(detected)
         return image_results_yolo
