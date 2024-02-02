@@ -94,7 +94,6 @@ def yolo_detection(frame):
                     },
                 }
             )
-
     return results
 
 
