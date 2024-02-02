@@ -61,6 +61,24 @@ def create_plate_detection_table(conn, table_name="plate_detection"):
     conn.commit()
     cursor.close()
 
+
+def insert_detection(conn, detection):
+    cursor = conn.cursor()
+    xmin, ymin, xmax, ymax, license_text, bbox_score, text_score, region = (
+        detection
+    )
+    insert_query = f"""
+    INSERT INTO plate_detection (x_min, y_min, x_max, y_max, license_text, bbox_score, text_score, region)
+    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+"""
+    cursor.execute(
+        insert_query,
+        (xmin, ymin, xmax, ymax, license_text, bbox_score, text_score, region),
+    )
+    conn.commit()
+    cursor.close()
+
+
 def get_data(conn):
     cursor = conn.cursor()
     get_data = f"""
@@ -68,5 +86,4 @@ def get_data(conn):
 """
     cursor.execute(get_data)
     df = pd.read_sql(get_data, conn)
-    # rows = cursor.fetchall()
     return df

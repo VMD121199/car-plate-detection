@@ -1,13 +1,14 @@
+import datetime
 import os
 import tempfile
-import time
+import pandas as pd
 import streamlit as st
 import requests
 import cv2
 import numpy as np
 import plotly.express as px
-from auth import get_data
-from db import create_connection
+
+# from auth import get_data
 
 
 def predict_video(video_file):
@@ -26,12 +27,10 @@ def display_frames_with_rectangles(video_file, video_result):
     results = video_result.get("results", [])
     video_bytes = video_file.read()
 
-    # Create a temporary file to save the processed video
     fd, temp_file_path = tempfile.mkstemp(suffix=".mp4")
     with os.fdopen(fd, "wb") as temp_file:
         temp_file.write(video_bytes)
 
-    # Check the number of frames in the video
     cap = cv2.VideoCapture(temp_file_path)
     total_frames = cap.get(cv2.CAP_PROP_FRAME_COUNT)
     fps = cap.get(cv2.CAP_PROP_FPS)
@@ -55,7 +54,7 @@ def display_frames_with_rectangles(video_file, video_result):
             for rs in results[idx]:
                 frame_with_rectangles = draw_rectangles_on_frame(
                     frame_with_rectangles,
-                    rs.get("license_plate", {}).get("bounding_box"),
+                    rs.get("license_plate", {}).get("tracking_box"),
                     rs.get("license_plate", {}).get("text"),
                 )
             if frame_with_rectangles is not None:
@@ -155,7 +154,7 @@ def dashboard():
                         if "license_plate" in rs:
                             original_image_rgb = draw_rectangles_on_frame(
                                 original_image_rgb,
-                                rs["license_plate"]["bounding_box"],
+                                rs["license_plate"]["tracking_box"],
                                 rs["license_plate"]["text"],
                             )
                     st.image(
@@ -172,28 +171,47 @@ def dashboard():
         st.session_state.user_email = None
         st.experimental_rerun()
 
-def visualize_car_plate_detection():
-    conn = create_connection()
-    data = get_data(conn)
 
+def visualize_car_plate_detection():
     st.title("Car License Plate Recognition Dashboard")
 
     st.markdown("### Past Predictions")
-    st.dataframe(data)
+    get_url = "http://localhost:8000/query-data/"
+    response = requests.get(get_url)
+    data = response.json()
+
+    df = pd.DataFrame(data)
+    df["detection_time"] = pd.to_datetime(df["detection_time"], unit="ms")
+    st.dataframe(df)
 
     fig_col1, fig_col2 = st.columns(2)
     with fig_col1:
-        fig = px.density_heatmap(data_frame=data, x='x_min', y='y_min', z='bbox_score',
-            title='Density Heatmap of Bounding Box Scores',
-            labels={'x_min': 'X_min', 'y_min': 'Y_min', 'bbox_score': 'Bounding Box Score'})
+        fig = px.density_heatmap(
+            data_frame=data,
+            x="x_min",
+            y="y_min",
+            z="bbox_score",
+            title="Density Heatmap of Bounding Box Scores",
+            labels={
+                "x_min": "X_min",
+                "y_min": "Y_min",
+                "bbox_score": "Bounding Box Score",
+            },
+        )
         st.write(fig)
     with fig_col2:
-        fig = px.scatter(data, x='bbox_score', y='text_score', 
-                     title='Scatter Plot of Bounding Box Score vs. Text Score',
-                     labels={'bbox_score': 'Bounding Box Score', 'text_score': 'Text Score'})
+        fig = px.scatter(
+            data,
+            x="bbox_score",
+            y="text_score",
+            title="Scatter Plot of Bounding Box Score vs. Text Score",
+            labels={
+                "bbox_score": "Bounding Box Score",
+                "text_score": "Text Score",
+            },
+        )
 
         st.plotly_chart(fig)
-
 
 
 if __name__ == "__main__":
